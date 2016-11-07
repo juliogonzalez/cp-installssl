@@ -1,0 +1,266 @@
+#!/usr/bin/env php
+<?php
+/**
+ * cp-installssl
+ * Script to install SSL certificates with cPanel's JSON API
+ * Heavily based on https://geneticcoder.blogspot.com.es/2014/07/using-cpanels-json-api-with-php-curl-to.html
+ * @author Rob Parham, Julio Gonzalez Gil
+ * @copyright Copyright (c) 2014, Rob Parham
+ * @license http://www.wtfpl.net/ WTF Public License
+ */
+
+namespace CPanelSSLManager;
+
+class CPanelSSLManager
+{
+    public $cookiefile;
+    private $cpanelHost;
+    private $cpanelPort;
+    private $username;
+    private $password;
+    private $logcurl;
+    private $curlfile;
+    private $emailArray;
+    private $cpsess;
+
+    /**
+     * Constructor
+     * @param string $user cPanel username
+     * @param string $pass cPanel password
+     * @param string $host cPanel domain
+     * @param int $port cPanel domain
+    */
+    public function __construct($user, $pass, $host, $port = 2083)
+    {
+        $this->cpanelHost = $host;
+        $this->cpanelPort = $port;
+        $this->username = $user;
+        $this->password = $pass;
+        $this->logcurl = false;
+        $this->cookiefile = "cpsm_cookie_".rand(99999, 9999999).".txt";
+        $this->logIn();
+    }
+
+
+    /**
+     * Installs a SSL certificate
+     * @param string $domain Domaing to use with the certifcates
+     * @param string $certfile Path to the certificate file
+     * @param string $keyfile Path to the private key file
+     * @param string $cafile Path to the CA certificate file
+     * @return bool
+    */
+    public function installSSL($domain, $certfile, $keyfile, $cafile = null)
+    {
+        $params = 'user='.$this->username.'&pass='.$this->password;
+        ;
+        $crt = urlencode(file_get_contents($certfile));
+        $key = urlencode(file_get_contents($keyfile));
+        $cabundle = isset($cafile) ? urlencode(file_get_contents($cafile)) : null;
+        $url = "https://".$this->cpanelHost.":".$this->cpanelPort.$this->cpsess."/json-api/cpanel".
+        "?cpanel_jsonapi_version=2".
+        "&cpanel_jsonapi_func=installssl".
+        "&cpanel_jsonapi_module=SSL&".
+        "domain=".$domain."&".
+        "crt=".$crt."&".
+        "key=".$key."&".
+        "cabundle=".$cabundle;
+        $answer = json_decode($this->request($url, $params), true);
+        if (isset($answer['cpanelresult']['data'][0])) {
+            $text = $answer['cpanelresult']['data'][0]['output'];
+            $retcode = ($answer['cpanelresult']['data'][0]['result'] == 1) ? true : false;
+        } else {
+            $text = $answer['cpanelresult']['data']['reason'];
+            $retcode = ($answer['cpanelresult']['data']['result'] == 1) ? true : false;
+        }
+        return array($text, $retcode);
+    }
+
+
+    /**
+     * Turns cURL logging on
+     * @param int $curlfile Path to curl log file
+     * @return array
+    */
+    public function logCurl($curlfile = "cpmm_curl_log.txt")
+    {
+        if (!file_exists($curlfile)) {
+            try {
+                fopen($curlfile, "w");
+            } catch (Exception $ex) {
+                if (!file_exists($curlfile)) {
+                    return $ex.'Cookie file missing.';
+                    exit;
+                }
+                return true;
+            }
+        } elseif (!is_writable($curlfile)) {
+            return 'Cookie file not writable.';
+            exit;
+        }
+        $this->logcurl = true;
+        return true;
+    }
+    
+    /**
+     * Starts a session on the cPanel server
+     * @access private
+    */
+    private function logIn()
+    {
+        $url = 'https://'.$this->cpanelHost.":".$this->cpanelPort."/login/?login_only=1";
+        $url .= "&user=".$this->username."&pass=".urlencode($this->password);
+        $answer = $this->request($url);
+        $answer = json_decode($answer, true);
+        if (isset($answer['status']) && $answer['status'] == 1) {
+            $this->cpsess = $answer['security_token'];
+            $this->homepage = 'https://'.$this->cpanelHost.":".$this->cpanelPort.$answer['redirect'];
+        }
+    }
+
+    /**
+     * Makes an HTTP request
+     * @access private
+    */
+    private function request($url, $params = array())
+    {
+        if ($this->logcurl) {
+            $curl_log = fopen($this->curlfile, 'a+');
+        }
+        if (!file_exists($this->cookiefile)) {
+            @fopen($this->cookiefile, "w");
+            if (!file_exists($this->cookiefile)) {
+                echo 'Cookie file missing. '.$this->cookiefile;
+                exit;
+            }
+        } elseif (!is_writable($this->cookiefile)) {
+            echo 'Cookie file not writable. '.$this->cookiefile;
+            exit;
+        }
+        $ch = curl_init();
+        $curlOpts = array(
+            CURLOPT_URL             => $url,
+            CURLOPT_USERAGENT       => 'Mozilla/5.0 (Windows NT 6.3; WOW64; rv:29.0) Gecko/20100101 Firefox/29.0',
+            CURLOPT_SSL_VERIFYPEER  => false,
+            CURLOPT_RETURNTRANSFER  => true,
+            CURLOPT_COOKIEJAR       => realpath($this->cookiefile),
+            CURLOPT_COOKIEFILE      => realpath($this->cookiefile),
+            CURLOPT_FOLLOWLOCATION  => true,
+            CURLOPT_HTTPHEADER      => array(
+                "Host: ".$this->cpanelHost,
+                "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+                "Accept-Language: en-US,en;q=0.5",
+                "Accept-Encoding: gzip, deflate",
+                "Connection: keep-alive",
+                "Content-Type: application/x-www-form-urlencoded")
+        );
+        if (!empty($params)) {
+            $curlOpts[CURLOPT_POST] = true;
+            $curlOpts[CURLOPT_POSTFIELDS] = $params;
+        }
+        if ($this->logcurl) {
+            $curlOpts[CURLOPT_STDERR] = $curl_log;
+            $curlOpts[CURLOPT_FAILONERROR] = false;
+            $curlOpts[CURLOPT_VERBOSE] = true;
+        }
+        curl_setopt_array($ch, $curlOpts);
+        $answer = curl_exec($ch);
+        if (curl_error($ch)) {
+            echo curl_error($ch);
+            exit;
+        }
+        curl_close($ch);
+        if ($this->logcurl) {
+            fclose($curl_log);
+        }
+        return (@gzdecode($answer)) ? gzdecode($answer) : $answer;
+    }
+}
+
+/**
+ * Print a message showing that the given filename does not exist
+ * @param string $filename The path for the filename
+ * @return array
+*/
+function print_file_not_exists($filename)
+{
+    printf("File %s does not exist\n", $filename);
+}
+
+$cfgenvvar = 'CPINSTALSSL_CFG';
+$cfgdefaultfile = '/.cp-installssl.ini';
+$scriptname = basename($argv[0]);
+
+// Validate number of parameters, and show help if incorrect
+if ($argc < 4) {
+    printf("%s - Script to install SSL certificates with cPanel's JSON API\n", $scriptname);
+    printf("\n");
+    printf("Use: %s <domain> <certfile> <keyfile> [cafile]\n", $scriptname);
+    printf("\n");
+    printf("You need to create a config file before using the script, either at\n");
+    printf("~%s or at any other place (use the environment variable\n", $cfgdefaultfile);
+    printf("%s)\n", $cfgenvvar);
+    printf("\n");
+    printf("Format for the config file is:\n");
+    printf("\n");
+    printf("    [installssh]\n");
+    printf("    host=my.cpanelserver.com\n");
+    printf("    port=2083\n");
+    printf("    user=mylogin\n");
+    printf("    pass=mypassword\n");
+    exit;
+}
+
+// Save options
+$options['domain'] = $argv[1];
+$options['certfile'] = $argv[2];
+$options['keyfile'] = $argv[3];
+$options['cafile'] = isset($argv[4]) ? $argv[4] : null;
+
+// Validate if all files exist
+switch (false) {
+    case file_exists($options['certfile']):
+        print_file_not_exists($options['certfile']);
+        exit;
+    case file_exists($options['keyfile']):
+        print_file_not_exists($options['keyfile']);
+        exit;
+    case file_exists($options['cafile']):
+        if (isset($options['cafile'])) {
+            print_file_not_exists($options['cafile']);
+            exit;
+        }
+}
+
+// Load config, either with the path at the environment variable CPINSTALSSL_CFG
+// or at ~/.cp-installssl.ini
+$configfile = (!getenv($cfgenvvar)) ? getenv("HOME").$cfgdefaultfile : getenv($cfgenvvar);
+if (file_exists($configfile)) {
+    $config = parse_ini_file($configfile);
+} else {
+    print_file_not_exists($configfile);
+    exit;
+}
+
+printf("====================================================================\n");
+printf(" CONFIG_FILE => %s\n", $configfile);
+printf(" HOST:PORT   => %s:%s\n", $config['host'], $config['port']);
+printf("\n");
+printf(" DOMAIN      => %s\n", $options['domain']);
+printf(" CERTIFICATE => %s\n", $options['certfile']);
+printf(" PRIVATE_KEY => %s\n", $options['keyfile']);
+printf(" CABUNDLE    => %s\n", $options['cafile']);
+printf("====================================================================\n");
+
+// Install the certificate
+$cpsm = new cPanelSSLManager($config['user'], $config['pass'], $config['host'], $config['port']);
+$result = $cpsm->installSSL($options['domain'], $options['certfile'], $options['keyfile'], $options['cafile']);
+
+// Remove cookie file
+unlink($cpsm->cookiefile);
+
+// Print result message and exit
+printf("%s\n", $result[0]);
+exit($result[1] ? 0 : 1);
+
+?>
