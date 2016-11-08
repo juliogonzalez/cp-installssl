@@ -6,18 +6,18 @@ It is heavily based on [code](https://geneticcoder.blogspot.com.es/2014/07/using
 
 # Why? 
 
-I created the script specifically to upload Let's Encrypt SSL certificates to Namecheap shared hosting, which does not support Let's Encrypt out of the box.
+I created the script specifically to upload [Let's Encrypt SSL](https://letsencrypt.org/) certificates to Namecheap shared hosting, which does not support Let's Encrypt out of the box.
 
-In fact you can request SSH access your Namecheap shared hosting, install acme.sh, a cron job to renew the certificates and use this script to instal them.
+In fact you can request SSH access your Namecheap shared hosting, install [acme.sh](https://github.com/Neilpang/acme.sh), a cron job to renew the certificates and use this script to instal them.
 
-Obviously you can use to automate any other SSL configuration with a certificate from other providers, and not just from Let's Encrypt.
+Obviously you can use to automate any other SSL configuration with a certificate from other providers.
 
 # How to use it?
 
 To get help just run:
-
+```
  ./cp-installssh
-
+```
 You will need an INI file with the configuration (host, port, user, password...) to access your CPanel. You can either place it at ~/.cp-installssl.ini or create an environment variable CPINSTALSSL_CFG to point to any other file with the config.
 
 You have an example at this very same repository.
