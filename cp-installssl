@@ -203,7 +203,7 @@ if ($argc < 4) {
     printf("\n");
     printf("Format for the config file is:\n");
     printf("\n");
-    printf("    [installssh]\n");
+    printf("    [cpanel]\n");
     printf("    host=my.cpanelserver.com\n");
     printf("    port=2083\n");
     printf("    user=mylogin\n");
