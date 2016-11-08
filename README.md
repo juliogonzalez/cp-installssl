@@ -2,6 +2,8 @@
 
 cp-installssl, a PHP script to install SSL certificates with cPanel's JSON API
 
+It is heavily based on [code](https://geneticcoder.blogspot.com.es/2014/07/using-cpanels-json-api-with-php-curl-to.html) by [Rob Parham](https://plus.google.com/118182322818308613582).
+
 # Why? 
 
 I created the script specifically to upload Let's Encrypt SSL certificates to Namecheap shared hosting, which does not support Let's Encrypt out of the box.
