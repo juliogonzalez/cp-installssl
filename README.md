@@ -27,3 +27,7 @@ You have an example at this very same repository.
 The script will only work with cPanel installations supporting the JSON API v2, and using SSL.
 
 Also note that you will need cURL enabled in PHP at the instance where you plan to run this script (does not need to be the same running cPanel.
+
+# License
+
+[WTF Public License](http://www.wtfpl.net/)
