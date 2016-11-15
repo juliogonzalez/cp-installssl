@@ -76,11 +76,11 @@ for HOST in ${HOSTS}; do
         if [ "${SUBDOMAIN}" == "@." ]; then SUBDOMAIN=""; fi
         ${CPINSTALLSSLDIR}/cp-installssl ${SUBDOMAIN}${PARENTHOST} ${CER} ${KEY}
       done
-    else
-      echo -e "${LOG}"
     fi
   else
     echo -e "${LOG}"
-    exit 1
+    if [ "$(echo -e ${LOG}|tail -n3|head -n1|grep 'Skip, Next renewal time is')" == "" ]; then
+      exit 1
+    fi
   fi
 done
