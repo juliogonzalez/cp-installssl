@@ -1,0 +1,86 @@
+#!/bin/bash
+BASE_DIR=$(dirname "${0}")
+SCRIPT=$(basename ${0})
+
+help() {
+  echo ""
+  echo "Script to renew Let's encrypt SSL certificates and install them to CPanel"
+  echo "(it requires acme.sh and cp-installssl)"
+  echo ""
+  echo "Syntax: "
+  echo ""
+  echo "${SCRIPT} -d '<HOSTNAME_LIST>' -a <ACME_DIR> -c [CPINSTALLSSL_DIR] [-f] [-s]"
+  echo ""
+  echo "Where: "
+  echo ""
+  echo " -d '<HOSTNAME_LIST>'  Where <HOSTNAME_LIST> is a whitespace separated list"
+  echo "                       of second level domains with (optional) third level"
+  echo "                       domains."
+  echo "                       For example:"
+  echo "                       - mydomain.com will renew and install certificate for"
+  echo "                         mydomain.com"
+  echo "                       - [@.,www.]mydomain.com will renew a single certificate"
+  echo "                         for mydomain.com and www.mydomain.com, but will install"
+  echo "                         the certificate two times for the different hostnames."
+  echo ""
+  echo " -a <ACME_DIR>         Where <ACME_DIR> is a filesystem path to a"
+  echo "                       https://github.com/Neilpang/acme.sh git clone"
+  echo ""
+  echo " -c <CPINSTALLSSL_DIR> Where <CPINSTALLSSL_DIR is a filesystem path to a"
+  echo "                       https://github.com/juliogonzalez/cp-installssl git clone"
+  echo ""
+  echo " -f                    Will force the certificates renewal"
+  echo ""
+  echo " -s                    Will use Let's Encrypt staging/test servers"
+  echo ""
+}
+
+print_invalid_syntax() {
+   echo "Invalid syntax. For help use: ${SCRIPT} -h"
+}
+
+while getopts "d:a:c::fsh" opts; do
+  case "${opts}" in
+    d) HOSTS="${OPTARG}";;
+    a) ACMEDIR="${OPTARG}";;
+    c) CPINSTALLSSLDIR="${OPTARG}";;
+    f) FORCE='--force';;
+    s) STAGING='--staging';;
+    h) help
+       exit 0;;
+    *) print_invalid_syntax
+       exit 1;;
+  esac
+done
+shift $((OPTIND-1))
+
+if [ -z "${HOSTS}" -o -z "${ACMEDIR}" -o -z "${CPINSTALLSSLDIR}" ]; then
+  print_invalid_syntax
+  exit 1
+fi
+
+for HOST in ${HOSTS}; do
+  PARENTHOST="$(echo ${HOST}|cut -d']' -f2)"
+  SUBDOMAINS="$(echo ${HOST}|cut -d']' -f1|tr -d '['|tr ',' ' ')"
+  if [ "${SUBDOMAINS}" == "${PARENTHOST}" ]; then SUBDOMAINS='@.'; fi
+  echo "####################################################################"
+  echo "     ${PARENTHOST} (subdomains: ${SUBDOMAINS})"
+  echo "####################################################################"
+  LOG="$(${ACMEDIR}/acme.sh --home ${ACMEDIR} --renew -d ${PARENTHOST} ${FORCE} ${STAGING})"
+  if [ $? -eq 0 ]; then
+    if ["$(echo -e ${LOG}|tail -n3|head -n1|grep 'Skip, Next renewal time is')" == "" ]; then
+      echo "[$(date)] Certificate renewed. Installing..."
+      CER="${ACMEDIR}/${PARENTHOST}/${PARENTHOST}.cer"
+      KEY="${ACMEDIR}/${PARENTHOST}/${PARENTHOST}.key"
+      for SUBDOMAIN in ${SUBDOMAINS}; do
+        if [ "${SUBDOMAIN}" == "@." ]; then SUBDOMAIN=""; fi
+        ${CPINSTALLSSLDIR}/cp-installssl ${SUBDOMAIN}${PARENTHOST} ${CER} ${KEY}
+      done
+    else
+      echo -e "${LOG}"
+    fi
+  else
+    echo -e "${LOG}"
+    exit 1
+  fi
+done

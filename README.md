@@ -8,9 +8,9 @@ It is heavily based on [code](https://geneticcoder.blogspot.com.es/2014/07/using
 
 I created the script specifically to upload [Let's Encrypt SSL](https://letsencrypt.org/) certificates to Namecheap shared hosting, which does not support Let's Encrypt out of the box.
 
-In fact you can request SSH access your Namecheap shared hosting, install [acme.sh](https://github.com/Neilpang/acme.sh), a cron job to renew the certificates and use this script to instal them.
+In fact you can request SSH access your Namecheap shared hosting, install [acme.sh](https://github.com/Neilpang/acme.sh), install this repository and create a cron job to call my **bash wrapper** (see below) to renew the certificates and auto install them.
 
-Obviously you can use to automate any other SSL configuration with a certificate from other providers.
+Obviously you can use to automate any other SSL configuration with a certificate from other providers by just using cp-installssl PHP script.
 
 # How to use it?
 
@@ -22,11 +22,17 @@ You will need an INI file with the configuration (host, port, user, password...)
 
 You have an example at this very same repository.
 
+# Bash wrapper
+
+Inside the **wrapper** folder you will find a bash script, which can be useful to combine cp-intallssl and acme.sh to autorenew and install certificates.
+
+Checkout its **README.md** for more information.
+
 # Restrictions
 
 The script will only work with cPanel installations supporting the JSON API v2, and using SSL.
 
-Also note that you will need cURL enabled in PHP at the instance where you plan to run this script (does not need to be the same running cPanel.
+Also note that you will need cURL enabled in PHP at the instance where you plan to run this script (does not need to be the same running cPanel).
 
 # License
 
