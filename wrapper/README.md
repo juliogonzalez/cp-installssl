@@ -10,7 +10,7 @@ Ideally you should call this script from Cron so you don't ever need to take car
 
 To get help just run:
 ```
- ./cp-installssh-wrapper -h
+ ./cp-installssl-wrapper -h
 ```
 
 # License

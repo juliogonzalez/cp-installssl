@@ -16,7 +16,7 @@ Obviously you can use to automate any other SSL configuration with a certificate
 
 To get help just run:
 ```
- ./cp-installssh
+ ./cp-installssl
 ```
 You will need an INI file with the configuration (host, port, user, password...) to access your CPanel. You can either place it at ~/.cp-installssl.ini or create an environment variable CPINSTALSSL_CFG to point to any other file with the config.
 
