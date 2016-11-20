@@ -20,7 +20,6 @@ class CPanelSSLManager
     private $password;
     private $logcurl;
     private $curlfile;
-    private $emailArray;
     private $cpsess;
 
     /**
