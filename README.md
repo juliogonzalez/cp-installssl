@@ -18,7 +18,7 @@ To get help just run:
 ```
  ./cp-installssl
 ```
-You will need an INI file with the configuration (host, port, user, password...) to access your CPanel. You can either place it at ~/.cp-installssl.ini or create an environment variable CPINSTALSSL_CFG to point to any other file with the config.
+You will need an INI file with the configuration (host, port, user, password...) to access your CPanel. You can either place it at `~/.cp-installssl.ini` or create an environment variable `CPINSTALSSL_CFG` to point to any other file with the config.
 
 You have an example at this very same repository.
 
@@ -26,7 +26,7 @@ You have an example at this very same repository.
 
 Inside the **wrapper** folder you will find a bash script, which can be useful to combine cp-intallssl and acme.sh to autorenew and install certificates.
 
-Checkout its **README.md** for more information.
+Checkout its [README.md](wrapper/README.md) for more information, and a link to a step by step tutorial.
 
 # Restrictions
 
