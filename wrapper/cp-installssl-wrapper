@@ -9,13 +9,13 @@ help() {
   echo ""
   echo "Syntax: "
   echo ""
-  echo "${SCRIPT} -d '<HOSTNAME_LIST>' -a <ACME_DIR> -c [CPINSTALLSSL_DIR] [-f] [-s]"
+  echo "${SCRIPT} -d '<HOSTNAME_LIST>' -a <ACME_DIR> -c <CPINSTALLSSL_DIR> [-r <ACME_CERT_DIR>] [-f] [-s]"
   echo ""
   echo "Where: "
   echo ""
-  echo " -d '<HOSTNAME_LIST>'  Where <HOSTNAME_LIST> is a whitespace separated list"
+  echo " -d '<HOSTNAME_LIST>'  Mandatory: <HOSTNAME_LIST> is a whitespace separated list"
   echo "                       of second level domains with (optional) third level"
-  echo "                       domains."
+  echo "                       domains for which we want certificates."
   echo "                       For example:"
   echo "                       - mydomain.com will renew and install certificate for"
   echo "                         mydomain.com"
@@ -23,15 +23,20 @@ help() {
   echo "                         for mydomain.com and www.mydomain.com, but will install"
   echo "                         the certificate two times for the different hostnames."
   echo ""
-  echo " -a <ACME_DIR>         Where <ACME_DIR> is a filesystem path to a"
+  echo " -a <ACME_DIR>         Mandatory: Specify a filesystem path to a"
   echo "                       https://github.com/Neilpang/acme.sh git clone"
   echo ""
-  echo " -c <CPINSTALLSSL_DIR> Where <CPINSTALLSSL_DIR is a filesystem path to a"
+  echo " -c <CPINSTALLSSL_DIR> Mandatory: Specify a filesystem path to a"
   echo "                       https://github.com/juliogonzalez/cp-installssl git clone"
   echo ""
-  echo " -f                    Will force the certificates renewal"
+  echo " -r <ACME_DATA_DIR>    Optional: Specify a filesystem path to the directory where"
+  echo "                       acme.sh data (private keys, certificates, etc) are stored."
+  echo "                       If the parameter is not specofied then ~/.acme.sh/ will be"
+  echo "                       used by default"
   echo ""
-  echo " -s                    Will use Let's Encrypt staging/test servers"
+  echo " -f                    Optional: Will force the certificates renewal"
+  echo ""
+  echo " -s                    Optional: Will use Let's Encrypt staging/test servers"
   echo ""
 }
 
@@ -39,11 +44,12 @@ print_invalid_syntax() {
    echo "Invalid syntax. For help use: ${SCRIPT} -h"
 }
 
-while getopts "d:a:c::fsh" opts; do
+while getopts "d:a:c:r::fsh" opts; do
   case "${opts}" in
     d) HOSTS="${OPTARG}";;
-    a) ACMEDIR="${OPTARG}";;
-    c) CPINSTALLSSLDIR="${OPTARG}";;
+    a) ACMEDIR="${OPTARG%/}";;
+    c) CPINSTALLSSLDIR="${OPTARG%/}";;
+    r) ACMEDATADIR="${OPTARG%/}";;
     f) FORCE='--force';;
     s) STAGING='--staging';;
     h) help
@@ -59,6 +65,10 @@ if [ -z "${HOSTS}" -o -z "${ACMEDIR}" -o -z "${CPINSTALLSSLDIR}" ]; then
   exit 1
 fi
 
+if [ -z "${ACMEDATADIR}" ]; then
+  ACMEDATADIR="${HOME}/.acme.sh"
+fi
+
 for HOST in ${HOSTS}; do
   PARENTHOST="$(echo ${HOST}|cut -d']' -f2)"
   SUBDOMAINS="$(echo ${HOST}|cut -d']' -f1|tr -d '['|tr ',' ' ')"
@@ -70,8 +80,8 @@ for HOST in ${HOSTS}; do
   if [ $? -eq 0 ]; then
     if [ "$(echo -e ${LOG}|tail -n3|head -n1|grep 'Skip, Next renewal time is')" == "" ]; then
       echo "[$(date)] Certificate renewed. Installing..."
-      CER="${ACMEDIR}/${PARENTHOST}/${PARENTHOST}.cer"
-      KEY="${ACMEDIR}/${PARENTHOST}/${PARENTHOST}.key"
+      CER="${ACMEDATADIR}/${PARENTHOST}/${PARENTHOST}.cer"
+      KEY="${ACMEDATADIR}/${PARENTHOST}/${PARENTHOST}.key"
       for SUBDOMAIN in ${SUBDOMAINS}; do
         if [ "${SUBDOMAIN}" == "@." ]; then SUBDOMAIN=""; fi
         ${CPINSTALLSSLDIR}/cp-installssl ${SUBDOMAIN}${PARENTHOST} ${CER} ${KEY}
