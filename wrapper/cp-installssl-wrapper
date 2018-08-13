@@ -76,7 +76,7 @@ for HOST in ${HOSTS}; do
   echo "####################################################################"
   echo "     ${PARENTHOST} (subdomains: ${SUBDOMAINS})"
   echo "####################################################################"
-  LOG="$(${ACMEDIR}/acme.sh --home ${ACMEDIR} --renew -d ${PARENTHOST} ${FORCE} ${STAGING})"
+  LOG="$(${ACMEDIR}/acme.sh --home ${ACMEDATADIR} --renew -d ${PARENTHOST} ${FORCE} ${STAGING})"
   if [ $? -eq 0 ]; then
     if [ "$(echo -e ${LOG}|tail -n3|head -n1|grep 'Skip, Next renewal time is')" == "" ]; then
       echo "[$(date)] Certificate renewed. Installing..."
