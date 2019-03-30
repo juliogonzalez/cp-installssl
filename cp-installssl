@@ -203,10 +203,10 @@ if ($argc < 4) {
     printf("Format for the config file is:\n");
     printf("\n");
     printf("    [cpanel]\n");
-    printf("    host=my.cpanelserver.com\n");
-    printf("    port=2083\n");
-    printf("    user=mylogin\n");
-    printf("    pass=mypassword\n");
+    printf("    host=\"my.cpanelserver.com\"\n");
+    printf("    port=\"2083\"\n");
+    printf("    user=\"mylogin\"\n");
+    printf("    pass=\"mypassword\"\n");
     exit;
 }
 

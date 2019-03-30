@@ -22,6 +22,8 @@ You will need an INI file with the configuration (host, port, user, password...)
 
 You have an example at this very same repository.
 
+If you are having 403 HTTP errros when using cp-installssl, it's because your password has non-alphanumerical characters. Please not that all values should be enclosed within double quotes (`"`) as at the example.
+
 # Bash wrapper
 
 Inside the **wrapper** folder you will find a bash script, which can be useful to combine cp-intallssl and acme.sh to autorenew and install certificates.
