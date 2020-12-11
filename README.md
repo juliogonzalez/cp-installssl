@@ -1,3 +1,7 @@
+# Deprecation
+
+**IMPORTANT**: [acme.sh](https://github.com/acmesh-official/acme.sh) now supports deploying SSL certificates to cPanel, so my method is deprecated. Please use the [official acme.sh method](https://github.com/acmesh-official/acme.sh/wiki/Simple-guide-to-add-TLS-cert-to-cpanel) instead.
+
 # What is this?
 
 cp-installssl, a PHP script to install SSL certificates with cPanel's JSON API
